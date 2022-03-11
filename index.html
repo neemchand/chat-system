@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
+
+    <title>Chat system</title>
+  </head>
+  <body>
+
+    <header class="d-flex justify-content-center">
+    <h1>My chat room</h1>
+    </header>
+    <div class="container">
+      <br>
+      <div class="jumbotron">
+      <h1 class="display-4">Send Message</h1>
+      <br>
+      <input id="name" class="form-control" placeholder="Name">
+      <br>
+      <textarea id="message" class="form-control" placeholder="Your Message Here">
+      </textarea>
+      <br>
+      <button id="send" class="btn btn-success">Send</button>
+      </div>
+      <h2>Show all messages</h2>
+     <div id="messages">
+
+    </div>
+
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous"></script>
+    <script>
+  $(() => {
+    $("#send").click(()=>{
+       sendMessage({
+          name: $("#name").val(),
+          message:$("#message").val()});
+        })
+      getMessages()
+    })
+   function addMessages(message){
+     console.log(message);
+      $("#messages").append(`
+          <h4> ${message.name} </h4>
+          <p>  ${message.message} </p>`)
+      }
+
+    function getMessages(){
+      $.get('http://localhost:8080/messages', (data) => {
+      data.forEach(addMessages);
+      })
+    }
+
+    function sendMessage(message){
+      $.post('http://localhost:8080/messages', message)
+    }
+
+  </script>
+  </body>
+</html>
