@@ -1,41 +1,66 @@
 const express = require('express');
 const app = express();
-const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const http = require('http');
-const io = require('socket.io');
+const process = require('process');
+require('dotenv').config();
 
-const server = app.listen(8080, () => {
-  console.log(`server is running on`, server.address().port);
+const server = http.createServer(app);
+const io = require('socket.io')(server);
+
+server.listen(process.env.PORT || 5000, () => {
+  console.log(`server is running on port`, process.env.PORT || 5000);
 });
 
 app.use(express.static(__dirname));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-const dbUrl = 'mongodb://localhost:27017/chat-system';
-
-mongoose.connect(dbUrl, (err) => {
-  if (err) {
-    return err;
+// In-memory storage for messages (replaces MongoDB)
+let messages = [
+  {
+    name: "System",
+    message: "Welcome to the chat room!",
+    timestamp: new Date()
+  },
+  {
+    name: "Admin",
+    message: "Feel free to start chatting!",
+    timestamp: new Date()
   }
-  console.log('mongo db connected successfully');
-});
+];
+console.log('Using in-memory storage for messages');
 
-//Model
-const Message = mongoose.model('Message', { name: String, message: String });
-
-// api
+// API endpoints
 app.get('/messages', (req, res) => {
-  Message.find({}, (err, messages) => {
-    res.send(messages);
-  });
+  console.log('GET /messages - Sending', messages.length, 'messages');
+  res.json(messages);
 });
 
 app.post('/messages', (req, res) => {
-  var message = new Message(req.body);
-  message.save((err) => {
-    if (err) return res;
-    res.sendStatus(200);
+  console.log('POST /messages - Received:', req.body);
+
+  const message = {
+    name: req.body.name,
+    message: req.body.message,
+    timestamp: new Date()
+  };
+
+  // Add message to in-memory storage
+  messages.push(message);
+  console.log('Message saved. Total messages:', messages.length);
+
+  // Emit message to all connected clients
+  console.log('Broadcasting message to all clients via Socket.IO');
+  io.emit('message', message);
+
+  res.sendStatus(200);
+});
+
+io.on('connection', (socket) => {
+  console.log('User connected via Socket.IO. Socket ID:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected. Socket ID:', socket.id);
   });
 });
