@@ -27,39 +27,109 @@
       <br>
       <button id="send" class="btn btn-success">Send</button>
       </div>
-      <h2>Show all messages</h2>
-     <div id="messages">
-
-    </div>
+      <h2>Chat Messages</h2>
+      <div id="messages" class="border rounded p-3" style="height: 400px; overflow-y: auto; background-color: #f8f9fa;">
+        <!-- Messages will appear here -->
+      </div>
 
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
   $(() => {
-    $("#send").click(()=>{
-       sendMessage({
-          name: $("#name").val(),
-          message:$("#message").val()});
-        })
-      getMessages()
-    })
-   function addMessages(message){
-     console.log(message);
-      $("#messages").append(`
-          <h4> ${message.name} </h4>
-          <p>  ${message.message} </p>`)
+    console.log('Chat system initializing...');
+
+    // Initialize Socket.IO connection
+    const socket = io();
+
+    // Socket connection events
+    socket.on('connect', () => {
+      console.log('Connected to server via Socket.IO');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+
+    // Load existing messages when page loads
+    getMessages();
+
+    // Listen for new messages from server
+    socket.on('message', (message) => {
+      console.log('New message received via Socket.IO:', message);
+      addMessages(message);
+    });
+
+    // Handle send button click
+    $("#send").click(() => {
+      const name = $("#name").val().trim();
+      const messageText = $("#message").val().trim();
+
+      console.log('Attempting to send message:', { name, message: messageText });
+
+      if (name && messageText) {
+        sendMessage({
+          name: name,
+          message: messageText
+        });
+
+        // Clear the message input after sending
+        $("#message").val('');
+      } else {
+        alert('Please enter both name and message!');
       }
+    });
 
-    function getMessages(){
-      $.get('http://localhost:8080/messages', (data) => {
+    // Handle Enter key press in message textarea
+    $("#message").keypress(function(e) {
+      if (e.which == 13 && !e.shiftKey) {
+        e.preventDefault();
+        $("#send").click();
+      }
+    });
+  });
+
+  function addMessages(message) {
+    console.log('Adding message to UI:', message);
+    $("#messages").append(`
+      <div class="message-item mb-3 p-3 border rounded">
+        <h5 class="mb-1 text-primary">${message.name}</h5>
+        <p class="mb-1">${message.message}</p>
+        <small class="text-muted">${message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : ''}</small>
+      </div>
+    `);
+
+    // Auto-scroll to bottom to show latest message
+    $("#messages").scrollTop($("#messages")[0].scrollHeight);
+  }
+
+  function getMessages() {
+    console.log('Loading existing messages...');
+    $.get(`/messages`, (data) => {
+      console.log('Received messages:', data);
+      $("#messages").empty(); // Clear existing messages
       data.forEach(addMessages);
-      })
-    }
+    }).fail(function(xhr, status, error) {
+      console.error('Failed to load messages:', error);
+    });
+  }
 
-    function sendMessage(message){
-      $.post('http://localhost:8080/messages', message)
-    }
+  function sendMessage(message) {
+    console.log('Sending message to server:', message);
+    $.post(`/messages`, message)
+      .done(function(data) {
+        console.log('Message sent successfully');
+      })
+      .fail(function(xhr, status, error) {
+        console.error('Failed to send message:', error);
+        alert('Failed to send message. Please try again.');
+      });
+  }
 
   </script>
   </body>
