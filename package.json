@@ -6,7 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "watch": "nodemon server.js"
+    "start:mongodb": "node server-mongodb.js",
+    "watch": "nodemon server.js",
+    "watch:mongodb": "nodemon server-mongodb.js",
+    "docker:build": "docker build -t chat-system .",
+    "docker:run": "docker run -p 5000:5000 chat-system",
+    "docker:setup": "./docker-setup.sh",
+    "check:db": "node check-database.js"
   },
   "author": "Neem",
   "license": "ISC",
